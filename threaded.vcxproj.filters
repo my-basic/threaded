@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="threaded.c" />
+    <ClCompile Include="core\my_basic.c">
+      <Filter>core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="core">
+      <UniqueIdentifier>{f917d0f8-f05c-4de0-99df-5059305a8bac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{ededaaa4-b1b1-4527-9fed-2d17469f6654}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="core\my_basic.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="libs\thread.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
