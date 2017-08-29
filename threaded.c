@@ -8,9 +8,13 @@
 */
 
 #define  THREAD_IMPLEMENTATION
+#ifndef MB_CP_VC
+#	include <stdint.h>
+#endif /* MB_CP_VC */
+#include <stdio.h>
+#include <string.h>
 #include "core/my_basic.h"
 #include "libs/thread.h"
-#include <stdio.h>
 
 #define THREAD_COUNT 10
 
@@ -79,6 +83,8 @@ static int threaded_fork(void* data) {
 
 	// A forked workflow. Shares the same registered functions, parsed code, etc.
 	// but uses its own running context.
+	// It's not fully supported to run forked instances with multiple threads,
+	// cannot use referenced GC types in code, but simple data types are OK.
 	mb_fork(&bas, src);
 	// IMPORTANT: pass "false" to "clear_parser" to avoid different threads
 	// writing to same memory, it will be cleared when calling "mb_close" later.
