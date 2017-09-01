@@ -84,7 +84,8 @@ static int threaded_fork(void* data) {
 	// A forked workflow. Shares the same registered functions, parsed code, etc.
 	// but uses its own running context.
 	// It's not fully supported to run forked instances with multiple threads,
-	// cannot use referenced GC types in code, but simple data types are OK.
+	// cannot use referenced GC types in code, although simple data types are OK.
+	// If you are not sure about it, just don't use this way.
 	mb_fork(&bas, src);
 	// IMPORTANT: pass "false" to "clear_parser" to avoid different threads
 	// writing to same memory, it will be cleared when calling "mb_close" later.
