@@ -30,34 +30,34 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#if defined _MSC_VER
-#	define MB_CP_VC _MSC_VER
+#if defined ARDUINO
+#	define MB_CP_ARDUINO
+#elif defined __BORLANDC__
+#	define MB_CP_BORLANDC
 #elif defined __clang__
 #	define MB_CP_CLANG
 #elif defined __CYGWIN__
 #	define MB_CP_CYGWIN
-#elif defined __MINGW32__
-#	define MB_CP_MINGW32
-#elif defined __BORLANDC__
-#	define MB_CP_BORLANDC
-#elif defined __POCC__
-#	define MB_CP_PELLESC
-#elif defined __TINYC__
-#	define MB_CP_TCC
 #elif defined __GNUC__ || defined __GNUG__
 #	define MB_CP_GCC
-#elif defined __ICC || defined __INTEL_COMPILER
-#	define MB_CP_ICC
 #elif defined __HP_cc || defined __HP_aCC
 #	define MB_CP_HPC
 #elif defined __IBMC__ || defined __IBMCPP__
 #	define MB_CP_IBMC
+#elif defined __ICC || defined __INTEL_COMPILER
+#	define MB_CP_ICC
+#elif defined __MINGW32__
+#	define MB_CP_MINGW32
+#elif defined __POCC__
+#	define MB_CP_PELLESC
 #elif defined __PGI
 #	define MB_CP_PGCC
-#elif defined __SUNPRO_C || defined__SUNPRO_CC
+#elif defined __SUNPRO_C || defined __SUNPRO_CC
 #	define MB_CP_SOLARISC
-#elif defined ARDUINO
-#	define MB_CP_ARDUINO
+#elif defined __TINYC__
+#	define MB_CP_TCC
+#elif defined _MSC_VER
+#	define MB_CP_VC _MSC_VER
 #else
 #	define MB_CP_UNKNOWN
 #endif /* Compiler dependent macro */
@@ -169,6 +169,10 @@ extern "C" {
 #	define MB_ENABLE_STACK_TRACE
 #endif /* MB_ENABLE_STACK_TRACE */
 
+#ifndef MB_ENABLE_FULL_ERROR
+#	define MB_ENABLE_FULL_ERROR
+#endif /* MB_ENABLE_FULL_ERROR */
+
 #ifndef MB_CONVERT_TO_INT_LEVEL_NONE
 #	define MB_CONVERT_TO_INT_LEVEL_NONE 0
 #endif /* MB_CONVERT_TO_INT_LEVEL_NONE */
@@ -180,9 +184,9 @@ extern "C" {
 #	define MB_CONVERT_TO_INT_LEVEL MB_CONVERT_TO_INT_LEVEL_ALL
 #endif /* MB_CONVERT_TO_INT_LEVEL */
 
-#ifndef MB_ENABLE_FULL_ERROR
-#	define MB_ENABLE_FULL_ERROR
-#endif /* MB_ENABLE_FULL_ERROR */
+#ifndef MB_PREFER_SPEED
+#	define MB_PREFER_SPEED
+#endif /* MB_PREFER_SPEED */
 
 #ifndef MB_COMPACT_MODE
 #	define MB_COMPACT_MODE
@@ -296,6 +300,14 @@ extern "C" {
 #	define mb_unrefvar(__v) ((void)(__v))
 #endif /* mb_unrefvar */
 
+#ifndef mb_mem_tag_t
+typedef unsigned short mb_mem_tag_t;
+#endif /* mb_mem_tag_t */
+
+#ifndef mb_bytes_size
+#	define mb_bytes_size (mb_max(mb_max(mb_max(sizeof(void*), sizeof(unsigned long)), sizeof(int_t)), sizeof(real_t)))
+#endif /* mb_bytes_size */
+
 #ifndef mb_make_nil
 #	define mb_make_nil(__v) do { memset(&(__v).value.bytes, 0, sizeof(mb_val_bytes_t)); (__v).type = MB_DT_NIL; } while(0)
 #endif /* mb_make_nil */
@@ -335,10 +347,6 @@ extern "C" {
 #ifndef mb_int_val
 #	define mb_int_val(__v, __d) do { if((__v).type == MB_DT_INT) (__d) = (__v).value.integer; else if((__v).type == MB_DT_REAL) (__d) = (int_t)((__v).value.float_point); else (__d) = ~((int_t)0); } while(0)
 #endif /* mb_int_val */
-
-#ifndef mb_bytes_size
-#	define mb_bytes_size (mb_max(mb_max(mb_max(sizeof(void*), sizeof(unsigned long)), sizeof(int_t)), sizeof(real_t)))
-#endif /* mb_bytes_size */
 
 #ifndef MB_CODES
 #	define MB_CODES
@@ -467,6 +475,7 @@ typedef enum mb_error_e {
 	SE_RN_COLLECTION_OR_ITERATOR_EXPECTED,
 	SE_RN_ITERATOR_EXPECTED,
 	SE_RN_INVALID_ITERATOR,
+	SE_RN_INVALID_ITERATOR_USAGE,
 	SE_RN_ITERABLE_EXPECTED,
 	SE_RN_REFERENCED_USERTYPE_EXPECTED,
 	SE_RN_REFERENCED_TYPE_EXPECTED,
@@ -564,8 +573,6 @@ typedef struct mb_value_t {
 	mb_value_u value;
 } mb_value_t;
 
-typedef unsigned short mb_mem_tag_t;
-
 typedef int (* mb_func_t)(struct mb_interpreter_t*, void**);
 typedef int (* mb_has_routine_arg_func_t)(struct mb_interpreter_t*, void**, mb_value_t*, unsigned, unsigned*, void*);
 typedef int (* mb_pop_routine_arg_func_t)(struct mb_interpreter_t*, void**, mb_value_t*, unsigned, unsigned*, void*, mb_value_t*);
@@ -573,7 +580,7 @@ typedef int (* mb_routine_func_t)(struct mb_interpreter_t*, void**, mb_value_t*,
 typedef int (* mb_debug_stepped_handler_t)(struct mb_interpreter_t*, void**, char*, int, unsigned short, unsigned short);
 typedef void (* mb_error_handler_t)(struct mb_interpreter_t*, mb_error_e, char*, char*, int, unsigned short, unsigned short, int);
 typedef int (* mb_print_func_t)(const char*, ...);
-typedef int (* mb_input_func_t)(char*, int);
+typedef int (* mb_input_func_t)(const char*, char*, int);
 typedef int (* mb_import_handler_t)(struct mb_interpreter_t*, const char*);
 typedef void (* mb_dtor_func_t)(struct mb_interpreter_t*, void*);
 typedef void* (* mb_clone_func_t)(struct mb_interpreter_t*, void*);
@@ -672,7 +679,7 @@ MBAPI int mb_debug_set_stepped_handler(struct mb_interpreter_t* s, mb_debug_step
 MBAPI const char* mb_get_type_string(mb_data_e t);
 
 MBAPI int mb_raise_error(struct mb_interpreter_t* s, void** l, mb_error_e err, int ret);
-MBAPI mb_error_e mb_get_last_error(struct mb_interpreter_t* s);
+MBAPI mb_error_e mb_get_last_error(struct mb_interpreter_t* s, const char** file, int* pos, unsigned short* row, unsigned short* col);
 MBAPI const char* mb_get_error_desc(mb_error_e err);
 MBAPI int mb_set_error_handler(struct mb_interpreter_t* s, mb_error_handler_t h);
 
@@ -685,7 +692,7 @@ MBAPI int mb_gc(struct mb_interpreter_t* s, int_t* collected/* = NULL*/);
 MBAPI int mb_get_userdata(struct mb_interpreter_t* s, void** d);
 MBAPI int mb_set_userdata(struct mb_interpreter_t* s, void* d);
 MBAPI int mb_set_import_handler(struct mb_interpreter_t* s, mb_import_handler_t h);
-MBAPI int mb_gets(char* buf, int s);
+MBAPI int mb_gets(const char* pmt, char* buf, int s);
 MBAPI char* mb_memdup(const char* val, unsigned size);
 MBAPI int mb_set_memory_manager(mb_memory_allocate_func_t a, mb_memory_free_func_t f);
 

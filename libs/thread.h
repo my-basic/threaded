@@ -581,8 +581,12 @@ struct thread_queue_t
 
 #if defined( _WIN32 )
 
-    #define _CRT_NONSTDC_NO_DEPRECATE 
-    #define _CRT_SECURE_NO_WARNINGS
+    #ifndef _CRT_NONSTDC_NO_DEPRECATE
+        #define _CRT_NONSTDC_NO_DEPRECATE
+    #endif /* _CRT_NONSTDC_NO_DEPRECATE */
+    #ifndef _CRT_SECURE_NO_WARNINGS
+        #define _CRT_SECURE_NO_WARNINGS
+    #endif /* _CRT_SECURE_NO_WARNINGS */
 
     #if !defined( _WIN32_WINNT ) || _WIN32_WINNT < 0x0501 
         #undef _WIN32_WINNT
